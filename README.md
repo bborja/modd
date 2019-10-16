@@ -1,6 +1,7 @@
 # Marine Semantic Segmentation Training Dataset (MaSTr1325) [1]
 MaSTr1325 is a new large-scale marine semantic segmentation training dataset tailored for development of obstacle detection methods in small-sized coastal USVs. The dataset contains 1325 diverse images captured over a two year span with a real USV, covering a range of realistic conditions encountered in a coastal surveillance task. All images are per-pixel semantically labeled and synchronized with inertial measurements of the on-board sensors. In addition, a dataset augmentation protocol is proposed to address slight appearance differences of the images in the training set and those in deployment.
 
+### Labeling
 Each image from the dataset was manually annotated by human annotators with three categories (sea, sky and environment). An image editing software supporting multiple layers per image was used and each semantic region was annotated in a separate layer by multiple sized brushes for speed and accuracy. All annotations were carried out by in-house annotators and were verified and corrected by an expert to ensure a high-grade per-pixel annotation quality. The annotation procedure and the quality control took approximately twenty minutes per image. To account for the annotation uncertainty at the edge of semantically different regions, the edges between these regions were labeled by the unknown category. This label ensures that these pixels are excluded from learning.
 
 Labels in ground-truth annotation masks correspond to the following values:
@@ -19,6 +20,17 @@ Labels in ground-truth annotation masks correspond to the following values:
 	</li>
 </ul>
 
+### Augmentation
+In practice, we can realisticlly expect that the camera exposure and other parameters at application time differ from those used in the dataset acquisition. Data augmentation helps us effectively induce a regularization effect in the learning process. We thus propose applying the following data augmentations:
+<ol>
+	<li>vertical mirroring,</li>
+	<li>central rotations of +/- [5, 15] degrees,</li>
+	<li>elastic deformation of the water component,</li>
+	<li>color transfer.</li>
+</ol>
+
+### Download
+
 The dataset is publicly available for download:<br>
 &darr; <a href="#">MaSTr1325 Images [512x384]</a><br>
 &darr; <a href="#">MaSTr1325 Ground Truth Annotations [512x384]</a><br>
@@ -28,11 +40,14 @@ The dataset is publicly available for download:<br>
 # Multi-modal Obstacle Detection Dataset 2 (MODD 2) [2]
 MODD2 is currently the biggest and the most challenging multi-modal marine obstacle detection dataset captured by a real USV. Diverse weather conditions (sunny, overcast, foggy), extreme situations (abrupt change of motion, sun gliter and reflections) and various small obstacles all contribute to its difficulty.
 
+### Labeling
 Each frame in the dataset was manually annotated by a human annotator and later verified by an expert. The edge of water is annotated by a polygon, while obstacles are outlined with bounding boxes. The annotated obstacles are further divided into two classes:
 <ul>
 	<li>large obstacles (whose bounding box straddles the sea edge),</li>
 	<li>small obstacles (whose bounding box is fully located below the sea edge polygon).</li>
 </ul>
+
+### Download
 
 The dataset is publicly available for download at:<br>
 				&darr; <a href="http://box.vicos.si/borja/modd2_dataset/MODD2_video_data.zip">MODD2 Video Data and IMU Measurements</a><br>
@@ -41,7 +56,7 @@ The dataset is publicly available for download at:<br>
 				&darr; <a href="http://box.vicos.si/borja/modd2_dataset/MODD2_annotations_v2_rectified.zip">MODD2 Ground Truth Annotations (for rectified and undistorted images)</a><br>
 				&darr; <a href="http://box.vicos.si/borja/modd2_dataset/MODD2_USVparts_masks.zip">MODD2 Masks of Visible Parts of the USV</a><br>
 				
-<b>Evaluation Scripts for Obstacle Detection in a Marine Environment</b>
+# Evaluation Scripts for Obstacle Detection in a Marine Environment
 
 We use performance measures inspired by Kristan et al. [3]. The accuracy of the sea-edge estimation is measured by mean-squared error and standard deviation over all sequences (denoted as &mu;<sub>edg</sub> and &sigma;<sub>edg</sub> respectively). The accuracy of obstacle detection is measured by number of true positives (TP), false positives (FP), false negatives (FN), and by F-measure.
 ```
@@ -102,11 +117,11 @@ modd2_evaluate_all_sequences_raw('Projects/Viamaro/dataset_public', 'Projects/WA
 
 An extensive evaluation of state-of-the-art segmentation methods is available on our website <a href="#">MODD 2 LeaderBoard</a>.
 
-<b>Visualization Scripts</b>
+# Visualization Scripts
 
 <img src="description_images/qualitative_comparison.png">
 
-<b>References:</b><br>
+## References
 [1] <a href="">Bovcon, Borja, et al. "The MaSTr1325 dataset for training deep USV obstacle detection models"<br>
 	IEEE/RSJ International Conference on Intelligent Robots and Systems (2019): xxx-xxx.</a><br>
 [2] <a href="">Bovcon, Borja, et al."Stereo obstacle detection for unmanned surface vehicles by {IMU}-assisted semantic segmentation"<br>
