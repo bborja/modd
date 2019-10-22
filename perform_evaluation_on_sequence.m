@@ -1,0 +1,188 @@
+%% Perform evaluation
+% Function performs evaluation of the given method on the selected sequence
+function [output_results_cell, output_detections] = perform_evaluation_on_sequence(paths, seq, eval_params)
+    if(nargin < 3)
+        error('Not enough input parameters');
+    end
+    
+    %% Initialize output results
+    % (num_frames x 4) matrix of RMSE_water, TP, FP, FN
+    output_results_cell = cell(1, 4);
+    counter = 1;
+    
+    % In first cell we store extracted water-mask, while in the second cell
+    % we store detections list
+    output_detections = cell(1, 2);
+    
+    %% Read masks of USV parts
+    % Read mask that filters out the areas of the USV visible in the image
+    if(seq.id >= 1 && seq.id <= 9)
+        boat_parts_mask = imread(fullfile(paths.USV_parts_masks, 'plovba_1_L.png'));
+        black_areas = imread(fullfile(paths.dataset_path, 'masks_rectification_black_area', 'plovba01.png'));
+    elseif(seq.id >= 10 && seq.id <= 14)
+        boat_parts_mask = imread(fullfile(paths.USV_parts_masks, 'plovba_2_L.png'));
+        black_areas = imread(fullfile(paths.dataset_path, 'masks_rectification_black_area', 'plovba02.png'));
+    elseif(seq.id >= 15 && seq.id <= 18)
+        boat_parts_mask = imread(fullfile(paths.USV_parts_masks, 'plovba_3_L.png'));
+        black_areas = imread(fullfile(paths.dataset_path, 'masks_rectification_black_area', 'plovba03.png'));
+    elseif(seq.id >= 19 && seq.id <= 26)
+        boat_parts_mask = imread(fullfile(paths.USV_parts_masks, 'plovba_4_L.png'));
+        black_areas = imread(fullfile(paths.dataset_path, 'masks_rectification_black_area', 'plovba04.png'));
+    elseif(seq.id >= 27 && seq.id <= 28)
+        boat_parts_mask = imread(fullfile(paths.USV_parts_masks, 'plovba_5_L.png'));
+        black_areas = imread(fullfile(paths.dataset_path, 'masks_rectification_black_area', 'plovba05.png'));
+    end
+    
+    black_areas = imresize(black_areas, [384, 512], 'method', 'nearest');
+    se = strel('disk', 10);
+    black_areas = imbinarize(imdilate(uint8(black_areas), se));
+    
+    %% Loop through the images....
+    % Get the number of total frames in the sequence
+    total_frames = seq.end_frame - seq.start_frame;
+    
+    %% Get calibration details...
+    % Get calibration file
+	fs = cv.FileStorage(fullfile(paths.dataset_path, 'video_data', seq.name, 'calibration.yaml'));
+	% Get resolution of raw image
+	sim = [fs.imageSize{1}, fs.imageSize{2}];
+	% Get parameters for rectification
+	S = cv.stereoRectify(fs.M1, fs.D1, fs.M2, fs.D2, sim, fs.R, fs.T, 'ZeroDisparity', true, 'Alpha', 1);
+	% Fix rectification bug...
+	[S, map_L1, map_L2, ~, ~] = rectifyimages_fix(S, fs, sim); % Fix narrow view bug after rectification
+
+    f = waitbar(0, 'Initializing sequence...');
+    for frm_num = seq.start_frame + 1 : seq.end_frame
+        % update progress bar
+        if(mod(counter, 10) == 0)
+           waitbar(counter/total_frames, f, sprintf('Processing sequence %02d...', seq.id));
+        end
+        
+        % load segmentation mask
+        msk = imread(fullfile(paths.output, sprintf('%08dL_pred.png', frm_num)));
+        %msk = imread(fullfile(paths.output, sprintf('%08dL.png', frm_num)));
+
+        
+        % Override possible detections that are a couse of usv parts
+        [msk_size_y, msk_size_x, ~] = size(msk);
+        boat_parts_mask_resized = imresize(boat_parts_mask, [msk_size_y, msk_size_x], 'method', 'nearest');
+        for rgb_counter = 1 : 3 % loop through color channels
+            % extract current color channel
+            tmp = msk(:, :, rgb_counter);
+            % change with the corresponding value of the water component
+            tmp(boat_parts_mask_resized == 1) = eval_params.labels(3, rgb_counter);
+            % update the segmentation mask
+            msk(:, :, rgb_counter) = tmp;
+        end
+        
+        % Load ground truth file
+        gtl = load(fullfile(paths.ground_truth, sprintf('%08dL.mat', frm_num)));
+        gtl = gtl.annotations;
+        
+        % Filter sea-edge
+        sea_edge_line = gtl.sea_edge; 
+        % Ignore coordinates with inf or nan values...
+        sea_edge_line(sea_edge_line(:,1) == Inf | sea_edge_line(:,1) == -Inf | isnan(sea_edge_line(:,1)), :) = [];
+        sea_edge_line(sea_edge_line(:,2) == Inf | sea_edge_line(:,2) == -Inf | isnan(sea_edge_line(:,2)), :) = [];
+        % update 'out-of-screen' values
+        for i = 1 : size(sea_edge_line, 1)
+           if(sea_edge_line(i,1) < 1)
+               sea_edge_line(i,1) = 1;
+           end
+           if(sea_edge_line(i,1) > eval_params.img_size(2))
+               sea_edge_line(i,1) = eval_params.img_size(2);
+           end
+           
+           if(sea_edge_line(i,2) > eval_params.img_size(1))
+               sea_edge_line(i,2) = eval_params.img_size(1);
+           end
+        end
+        % Save filtered sea-edge to gtl
+        gtl.sea_edge = sea_edge_line;
+        
+        % create inverse sea mask
+        tmp_inv_sea_mask = poly2mask([1; sea_edge_line(:,1); eval_params.img_size(2)], [1; sea_edge_line(:,2); 1], eval_params.img_size(1), eval_params.img_size(2));
+        
+        % Separate obstacles to large and small ones
+        counter_lobs = 1;
+        counter_sobs = 1;
+        
+        gtl.largeobjects = [];
+        gtl.smallobjects = [];
+        
+        % Filter obstacles
+        for i = 1 : size(gtl.obstacles, 1)
+           tmp_rectangle = gtl.obstacles(i, :);
+           tmp_rectangle = round(tmp_rectangle);
+           
+           % Make sure that the obstacle is fully inside the image frame
+           if(tmp_rectangle(1) > eval_params.img_size(2))
+               tmp_rectangle(1) = eval_params.img_size(2);
+           end
+           if(tmp_rectangle(1) < 1)
+               tmp_rectangle(1) = 1;
+           end
+           if(tmp_rectangle(2) > eval_params.img_size(1))
+               tmp_rectangle(2) = eval_params.img_size(1);
+           end
+           if(tmp_rectangle(2) < 1)
+               tmp_rectangle(2) = 1;
+           end
+           
+           if(tmp_rectangle(1) + tmp_rectangle(3) > eval_params.img_size(2))
+               tmp_rectangle(3) = eval_params.img_size(2) - tmp_rectangle(1);
+           end
+           if(tmp_rectangle(2) + tmp_rectangle(4) > eval_params.img_size(1))
+               tmp_rectangle(4) = eval_params.img_size(1) - tmp_rectangle(2);
+           end
+           
+           tmp_msk_obs_i = zeros(eval_params.img_size(1), eval_params.img_size(2));
+           tmp_msk_obs_i(tmp_rectangle(2):tmp_rectangle(2)+tmp_rectangle(4), tmp_rectangle(1):tmp_rectangle(1)+tmp_rectangle(3)) = 1;
+           tmp_overlap = tmp_msk_obs_i .* tmp_inv_sea_mask;
+           if(sum(tmp_overlap(:)) > 0)
+               gtl.largeobjects = [gtl.largeobjects; tmp_rectangle(1), tmp_rectangle(2), tmp_rectangle(1)+tmp_rectangle(3), tmp_rectangle(2)+tmp_rectangle(4)];
+               counter_lobs = counter_lobs + 1;
+           else
+               gtl.smallobjects = [gtl.smallobjects; tmp_rectangle(1), tmp_rectangle(2), tmp_rectangle(1)+tmp_rectangle(3), tmp_rectangle(2)+tmp_rectangle(4)];
+               counter_sobs = counter_sobs + 1;
+           end
+           
+           gtl.obstacles(i, :) = [tmp_rectangle(1), tmp_rectangle(2), tmp_rectangle(1)+tmp_rectangle(3), tmp_rectangle(2)+tmp_rectangle(4)];
+        end
+        
+        %% Rectify image if it is needed
+        % remap segmentation mask to rectified images if we are evaluation
+        % on the rectified dataset and if the segmentation masks were
+        % obtained on raw images
+        if(eval_params.rectified == 1 && seq.is_rectified == 0)
+            msk = imresize(cv.remap(imresize(msk, eval_params.img_size, 'Method', 'nearest'), map_L1, map_L2), [msk_size_y, msk_size_x], 'Method', 'nearest');
+        end
+        
+        if(eval_params.rectified == 1)
+            % remove black areas
+            for rgb_counter = 1 : 3
+                tmp = msk(:, :, rgb_counter); % extract color
+                tmp(black_areas == 1) = eval_params.labels(3, rgb_counter);
+                msk(:, :, rgb_counter) = tmp;
+            end
+        end
+
+        
+        %% Postprocess output segmentation images
+        % Get extracted sea-mask and a list of all detections
+        [det_objs, sea_mask] = postprocess_output_image(msk, eval_params);
+        output_detections{counter, 1} = logical(sea_mask);
+        output_detections{counter, 2} = det_objs;
+        
+        %% Perform evaluation of detections...
+        [rmse_water, tp, fp, fn] = evaluate_detections_modd2(sea_mask, det_objs, gtl, eval_params);
+        output_results_cell{counter, 1} = rmse_water;
+        output_results_cell{counter, 2} = tp;
+        output_results_cell{counter, 3} = fp;
+        output_results_cell{counter, 4} = fn;
+        counter = counter + 1;
+        
+    end
+    close(f);
+    
+end
