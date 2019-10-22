@@ -1,10 +1,13 @@
-function [rmse_water, tp, fp, fn] = evaluate_detections_modd2(water_mask, det_obs, gt, eval_params)
+function [rmse_water, tp, fp, fn, tp_list, fp_list, fn_list] = evaluate_detections_modd2(water_mask, det_obs, gt, eval_params)
             sim = eval_params.img_size;
                    
             %% Initialization of results...
             tp = 0;
             fp = 0;
             fn = 0;
+            
+            fp_list = [];
+            fn_list = [];
 
             minoverlap_removal = eval_params.minoverlap;
             area_threshold = eval_params.area_threshold;
@@ -118,7 +121,7 @@ function [rmse_water, tp, fp, fn] = evaluate_detections_modd2(water_mask, det_ob
 
             %left camera
             try
-                [assigned_gt, assigned_det, tp, fp] = genDetectionMetrices(assigned_gt, assigned_det, filtered_det_objects, filtered_gt_objects, minoverlap_removal, SegmentationMask, lobj, gtSegmentationMask);
+                [assigned_gt, assigned_det, tp, fp, tp_list] = genDetectionMetrices(assigned_gt, assigned_det, filtered_det_objects, filtered_gt_objects, minoverlap_removal, SegmentationMask, lobj, gtSegmentationMask);
             catch err
                 errMsgTxt = getReport(err);
                 fprintf('%s\n', errMsgTxt);
@@ -131,6 +134,7 @@ function [rmse_water, tp, fp, fn] = evaluate_detections_modd2(water_mask, det_ob
             fn_counter = 1;
             for fn_loop = 1 : length(assigned_gt)
                 if(assigned_gt(fn_loop) == 0)
+                    fn_list(:,fn_counter) = filtered_gt_objects(:, fn_loop);
                     fn_counter = fn_counter + 1;
                 end
             end
@@ -142,6 +146,7 @@ function [rmse_water, tp, fp, fn] = evaluate_detections_modd2(water_mask, det_ob
             fp_counter = 1;
             for fp_loop = 1 : length(assigned_det)
                 if(assigned_det(fp_loop) == 0)
+                    fp_list(:,fp_counter) = filtered_det_objects(:, fp_loop);
                     fp_counter = fp_counter + 1;
                 end
             end
@@ -175,7 +180,7 @@ end
 %% Generate detection metrices
 % get assigned detection and assigned ground truth obstacles, 
 % a number of true positives and a number false positives
-function [assigned_gt, assigned_det, tp, fp] = genDetectionMetrices(assigned_gt, assigned_det, filtered_det_objects, filtered_gt_objects, minoverlap, SegmentationMask, lobj, gtSegmentationMask)
+function [assigned_gt, assigned_det, tp, fp, tp_list] = genDetectionMetrices(assigned_gt, assigned_det, filtered_det_objects, filtered_gt_objects, minoverlap, SegmentationMask, lobj, gtSegmentationMask)
     % get the number of filtered small object detections
     numdet = size(filtered_det_objects, 2);
     % get the number of filtered gt objects
@@ -186,6 +191,8 @@ function [assigned_gt, assigned_det, tp, fp] = genDetectionMetrices(assigned_gt,
     % initialize detections
     tp = 0;
     fp = 0;
+    
+    tp_list = []; 
     
     %% If there are GT obstacles or detections for the current frame
     if (numgt>0)||(numdet>0)
@@ -218,7 +225,6 @@ function [assigned_gt, assigned_det, tp, fp] = genDetectionMetrices(assigned_gt,
                             assigned_gt(j) = 1;
                             assigned_det(d) = 1;
                             tp_list(:, tp) = filtered_det_objects(:, d);
-                            tp_list_gt(:, tp) = filtered_gt_objects(:, j);
                         end;
                     end
                 end;
@@ -252,7 +258,6 @@ function [assigned_gt, assigned_det, tp, fp] = genDetectionMetrices(assigned_gt,
                     tp = tp + 1; %indirect detection!
                     assigned_gt(id_obj) = 1; %assign gt index to avoid multiple detections
                     tp_list(:, tp) = filtered_gt_objects(:, id_obj);
-                    tp_list_gt(:, tp) = filtered_gt_objects(:, id_obj);
                 end
             end
         end                
@@ -291,6 +296,7 @@ function [assigned_gt, assigned_det, tp, fp] = genDetectionMetrices(assigned_gt,
                         %if( (iw * ih) >= ((1 - minoverlap) * bb_size) ) %v3
                         if( (iw * ih) >= minoverlap * bb_size ) %v4
                             assigned_det(id_det) = 1;
+                            tp_list = [tp_list, filtered_det_objects(:, id_det)];
                             % obstacles has been detected, however, don't 
                             % affect the count of tp, fp or fn. Just ignore it
                         end
@@ -316,6 +322,7 @@ function [assigned_gt, assigned_det, tp, fp] = genDetectionMetrices(assigned_gt,
                    % annotated ground truth water edge, then assign such
                    % detection but ignore it regarding tp/fp score
                    assigned_det(id_det) = 1;
+                   tp_list = [tp_list, filtered_det_objects(:, id_det)];
                end
            catch err
                fprintf('Detection indices problem when checking detection above sea level\n');

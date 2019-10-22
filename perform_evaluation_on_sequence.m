@@ -81,74 +81,13 @@ function [output_results_cell, output_detections] = perform_evaluation_on_sequen
         
         % Filter sea-edge
         sea_edge_line = gtl.sea_edge; 
-        % Ignore coordinates with inf or nan values...
-        sea_edge_line(sea_edge_line(:,1) == Inf | sea_edge_line(:,1) == -Inf | isnan(sea_edge_line(:,1)), :) = [];
-        sea_edge_line(sea_edge_line(:,2) == Inf | sea_edge_line(:,2) == -Inf | isnan(sea_edge_line(:,2)), :) = [];
-        % update 'out-of-screen' values
-        for i = 1 : size(sea_edge_line, 1)
-           if(sea_edge_line(i,1) < 1)
-               sea_edge_line(i,1) = 1;
-           end
-           if(sea_edge_line(i,1) > eval_params.img_size(2))
-               sea_edge_line(i,1) = eval_params.img_size(2);
-           end
-           
-           if(sea_edge_line(i,2) > eval_params.img_size(1))
-               sea_edge_line(i,2) = eval_params.img_size(1);
-           end
-        end
-        % Save filtered sea-edge to gtl
-        gtl.sea_edge = sea_edge_line;
+        gtl.sea_edge = filter_sea_edge(gt.sea_edge, eval_params.img_size);
         
         % create inverse sea mask
         tmp_inv_sea_mask = poly2mask([1; sea_edge_line(:,1); eval_params.img_size(2)], [1; sea_edge_line(:,2); 1], eval_params.img_size(1), eval_params.img_size(2));
         
-        % Separate obstacles to large and small ones
-        counter_lobs = 1;
-        counter_sobs = 1;
-        
-        gtl.largeobjects = [];
-        gtl.smallobjects = [];
-        
-        % Filter obstacles
-        for i = 1 : size(gtl.obstacles, 1)
-           tmp_rectangle = gtl.obstacles(i, :);
-           tmp_rectangle = round(tmp_rectangle);
-           
-           % Make sure that the obstacle is fully inside the image frame
-           if(tmp_rectangle(1) > eval_params.img_size(2))
-               tmp_rectangle(1) = eval_params.img_size(2);
-           end
-           if(tmp_rectangle(1) < 1)
-               tmp_rectangle(1) = 1;
-           end
-           if(tmp_rectangle(2) > eval_params.img_size(1))
-               tmp_rectangle(2) = eval_params.img_size(1);
-           end
-           if(tmp_rectangle(2) < 1)
-               tmp_rectangle(2) = 1;
-           end
-           
-           if(tmp_rectangle(1) + tmp_rectangle(3) > eval_params.img_size(2))
-               tmp_rectangle(3) = eval_params.img_size(2) - tmp_rectangle(1);
-           end
-           if(tmp_rectangle(2) + tmp_rectangle(4) > eval_params.img_size(1))
-               tmp_rectangle(4) = eval_params.img_size(1) - tmp_rectangle(2);
-           end
-           
-           tmp_msk_obs_i = zeros(eval_params.img_size(1), eval_params.img_size(2));
-           tmp_msk_obs_i(tmp_rectangle(2):tmp_rectangle(2)+tmp_rectangle(4), tmp_rectangle(1):tmp_rectangle(1)+tmp_rectangle(3)) = 1;
-           tmp_overlap = tmp_msk_obs_i .* tmp_inv_sea_mask;
-           if(sum(tmp_overlap(:)) > 0)
-               gtl.largeobjects = [gtl.largeobjects; tmp_rectangle(1), tmp_rectangle(2), tmp_rectangle(1)+tmp_rectangle(3), tmp_rectangle(2)+tmp_rectangle(4)];
-               counter_lobs = counter_lobs + 1;
-           else
-               gtl.smallobjects = [gtl.smallobjects; tmp_rectangle(1), tmp_rectangle(2), tmp_rectangle(1)+tmp_rectangle(3), tmp_rectangle(2)+tmp_rectangle(4)];
-               counter_sobs = counter_sobs + 1;
-           end
-           
-           gtl.obstacles(i, :) = [tmp_rectangle(1), tmp_rectangle(2), tmp_rectangle(1)+tmp_rectangle(3), tmp_rectangle(2)+tmp_rectangle(4)];
-        end
+        % Separate obstacles to large and small ones + filter them
+        gtl = filter_obstacles(gtl, eval_params.img_size, tmp_inv_sea_mask);
         
         %% Rectify image if it is needed
         % remap segmentation mask to rectified images if we are evaluation
@@ -175,7 +114,7 @@ function [output_results_cell, output_detections] = perform_evaluation_on_sequen
         output_detections{counter, 2} = det_objs;
         
         %% Perform evaluation of detections...
-        [rmse_water, tp, fp, fn] = evaluate_detections_modd2(sea_mask, det_objs, gtl, eval_params);
+        [rmse_water, tp, fp, fn, ~, ~, ~] = evaluate_detections_modd2(sea_mask, det_objs, gtl, eval_params);
         output_results_cell{counter, 1} = rmse_water;
         output_results_cell{counter, 2} = tp;
         output_results_cell{counter, 3} = fp;

@@ -22,33 +22,18 @@ function modd2_evaluate_all_sequences_raw(dataset_path, output_path, method_name
         error('Not enough input parameters');
     end
     
-    %% Evaluation parameters
-    % Rectified dataset?
-    eval_params.rectified = 0; % false
-    % Minimum overlap between two obstacles
-    eval_params.minoverlap = 0.15; % (default: 0.02)
-    % Freezone area below the water-edge where obstacles are removed
-    eval_params.freezone = 0; % (default: 0.01)
-    % Minimum surface area of obstacles to be considered as a threat
-    eval_params.area_threshold = 5*5; % (default: 15x15)
-    % Original image size (height x width)
-    eval_params.img_size = [958, 1278];
-    % RGB encoding of the labels
     if(nargin == 3)
-        eval_params.labels = [  0, 255, 0; ... % Sky represented with green
-                                0,   0, 0; ... % obstacles with black
-                              255,   0, 0];    % and water with red color.
-    else
-        eval_params.labels = segmentation_colors;
+        segmentation_colors = [  0, 255, 0; ... % Sky represented with green
+                                 0,   0, 0; ... % obstacles with black
+                               255,   0, 0];    % and water with red color.
     end
     
+    %% Evaluation parameters
+    eval_params = get_eval_params(segmentation_colors);
+    
+    
     %% Extreme conditions information
-    % Sequence IDs where sudden movement occurres
-    extreme.sequences_sudden_movement = [1, 11];
-    % Sequence IDs where sun glitter occurres
-    extreme.sequences_sun_glitter = [11, 12, 13, 14, 20, 21, 22, 23, 24, 25, 26, 28];
-    % Sequence IDs where environmental reflections occurr
-    extreme.sequences_env_reflections = [1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 15, 16, 18, 23, 27, 28];
+    extreme = get_extreme_conditions();
     
     %% Makedir for storing interim results and posprocessed segmentation masks
     if(~exist(fullfile('results', method_name, 'postprocessing'), 'dir'))
