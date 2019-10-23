@@ -157,9 +157,10 @@ function [vis_img, tp, fp, fn] = perform_visualization(paths, seq, eval_params, 
     set(gca,'yticklabel',[]);
     %set(gca,'LooseInset',get(gca,'TightInset'));
     %set(gca, 'FontSmoothing', 'on')
-    set(gcf,'Position',[0 0 1278 958])
+    %set(gcf,'Position',[0 0 1278 958])
+    set(gca,'position',[0 0 1 1],'units','normalized')
     
-    vis_img = getframe(gcf);%final_img;
+    vis_img = getframe(gca);%final_img;
 end
 
 function new_im = change_colors_img(old_im, eval_params)

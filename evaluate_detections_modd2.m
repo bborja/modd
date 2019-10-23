@@ -131,11 +131,9 @@ function [rmse_water, tp, fp, fn, tp_list, fp_list, fn_list] = evaluate_detectio
             % detections - those are fn!
             fn = sum(assigned_gt==0);
             
-            fn_counter = 1;
             for fn_loop = 1 : length(assigned_gt)
-                if(assigned_gt(fn_loop) == 0)
-                    fn_list(:,fn_counter) = filtered_gt_objects(:, fn_loop);
-                    fn_counter = fn_counter + 1;
+                if(assigned_gt(fn_loop) < 1)
+                    fn_list = [fn_list, filtered_gt_objects(:, fn_loop)];
                 end
             end
 
@@ -143,11 +141,9 @@ function [rmse_water, tp, fp, fn, tp_list, fp_list, fn_list] = evaluate_detectio
             % to false positives
             fp = fp + sum(assigned_det==0);
             
-            fp_counter = 1;
             for fp_loop = 1 : length(assigned_det)
-                if(assigned_det(fp_loop) == 0)
-                    fp_list(:,fp_counter) = filtered_det_objects(:, fp_loop);
-                    fp_counter = fp_counter + 1;
+                if(assigned_det(fp_loop) < 1)
+                    fp_list = [fp_list, filtered_det_objects(:, fp_loop)];
                 end
             end
             
@@ -224,7 +220,8 @@ function [assigned_gt, assigned_det, tp, fp, tp_list] = genDetectionMetrices(ass
                             tp = tp + 1;
                             assigned_gt(j) = 1;
                             assigned_det(d) = 1;
-                            tp_list(:, tp) = filtered_det_objects(:, d);
+                            %tp_list(:, tp) = filtered_det_objects(:, d);
+                            tp_list = [tp_list, filtered_det_objects(:, d)];
                         end;
                     end
                 end;
@@ -253,11 +250,12 @@ function [assigned_gt, assigned_det, tp, fp, tp_list] = genDetectionMetrices(ass
                 %get the area of gt obj's boundind box
                 obj_box_size = size(obj_box, 1) * size(obj_box, 2);
                 %number of pixeles covered by water
-                obj_water_coverage = length(find(obj_box>0));
+                obj_water_coverage = sum(sum(obj_box>0)); %length(find(obj_box>0));
                 if(obj_water_coverage < (1 - minoverlap) * obj_box_size)
                     tp = tp + 1; %indirect detection!
                     assigned_gt(id_obj) = 1; %assign gt index to avoid multiple detections
-                    tp_list(:, tp) = filtered_gt_objects(:, id_obj);
+                    %tp_list(:, tp) = filtered_gt_objects(:, id_obj);
+                    tp_list = [tp_list, filtered_gt_objects(:, id_obj)];
                 end
             end
         end                
@@ -322,7 +320,7 @@ function [assigned_gt, assigned_det, tp, fp, tp_list] = genDetectionMetrices(ass
                    % annotated ground truth water edge, then assign such
                    % detection but ignore it regarding tp/fp score
                    assigned_det(id_det) = 1;
-                   tp_list = [tp_list, filtered_det_objects(:, id_det)];
+                   %tp_list = [tp_list, filtered_det_objects(:, id_det)];
                end
            catch err
                fprintf('Detection indices problem when checking detection above sea level\n');
