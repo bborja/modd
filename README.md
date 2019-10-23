@@ -112,13 +112,81 @@ segmentation_colors = [R_sky, G_sky, B_sky; ...
 
 A code example for running performance evaluation script on raw and distorted images for method <i>wasr_decoder_2</i>:
 ```
-modd2_evaluate_all_sequences_raw('Projects/Viamaro/dataset_public', 'Projects/WASR_results', 'wasr_decoder_2', [69, 78, 161; 246, 193, 59; 51, 168, 222]);
+modd2_evaluate_all_sequences_raw('Projects/Viamaro/dataset_public', ...
+				 'Projects/WASR_results', ...
+				 'wasr_decoder_2', ...
+				 [69, 78, 161; ...
+				  246, 193, 59; ...
+				  51, 168, 222]);
+```
+A code example for running performance evaluation script on rectified and undistorted images for method <i>wasr_decoder_2</i>:
+```
+modd2_evaluate_all_sequences_rectified('Projects/Viamaro/dataset_public', ...
+				       'Projects/WASR_results', ...
+				       'wasr_decoder_2', ...
+				       [69, 78, 161; ...
+				        246, 193, 59; ...
+				        51, 168, 222]);
+```
+Two folders are created during the evaluation process - <i>postprocessing</i> and <i>results</i>.
+For each sequence in the dataset a new <i>.mat</i> file inside the <i>postprocessing</i> folder is created, holding the information of the postprocessed binary water mask for each frame and a list of total detections present in each frame. Similarly, a new <i>.mat</i> file inside the <i>results</i> folder is generated for each sequence in the dataset. This file contains RMSE of water-edge and the number of TP, FP and FN detections for each frame of the sequence. It also contains the information of possible special occurances during the sequence (prominent sun glitter, sudden change of motion or environmental reflections present on the water surface).
+
+An example console output of the evaluation script for rectified sequences using <i>test_method</i> would look like:
+```
+**********************************
+* Evaluation on RECTIFIED images *
+* Method:            test_method *
+**********************************
+* Total RMSE:            10.8 px *
+* Total STD:             16.6 px *
+* Total STE:             00.2 px *
+* Total TP:                 5082 *
+* Total FP:                01458 *
+* Total FN:                 0367 *
+* F-measure:              84.8 % *
+**********************************
 ```
 
 An extensive evaluation of state-of-the-art segmentation methods is available on our website <a href="#">MODD 2 LeaderBoard</a>.
 
 # Visualization Scripts
+To keep visualizations of the results consistent with our paper, we propose using our Matlab visualization scripts. There are two functions available for visualization:
+<ol>
+	<li> <i>modd2_visualize_frame</i> --- for visualizing a single frame </li>
+	<li> <i>modd2_generate_video</i> --- for generating a video of the chosen sequence</li>
+</ol>
 
+The <i>modd2_visualize_frame</i> expects eight required input parameters (dataset path, path to segmentation masks, method name, author name, sequence number, frame number, use rectified images (boolean), type of visualization (0 - for qualitative comparison, 1 - for video). Generating a single frame visualization for qualitative comparison can be done by executing the following command:
+```
+modd2_visualize_frame('Projects/Viamaro/dataset_public', ...
+                      'Projects/WASR_results', ...
+		      'wasr_decoder_4', ...
+		      'Bovcon et al.', ...
+		      7, 350, 0, 0);
+```
+which outputs us the following image:
+<img src="description_images/single_frame_visualization_qualitative.png"><br>
+
+Generating a single frame visualization for a video can be done by executing the following command:
+```
+modd2_visualize_frame('Projects/Viamaro/dataset_public', ...
+                      'Projects/WASR_results', ...
+		      'wasr_decoder_4', ...
+		      'Bovcon et al.', ...
+		      7, 350, 0, 1);
+```
+which outputs us the following image:
+<img src="description_images/single_frame_visualization_video.png">
+
+To generate a video visualization we use <i>modd2_generate_video</i> function. It expects six required input parameters (dataset path, path to segmentation masks, method name, author name, sequence number, use rectified images (boolen)). An example call of this function for non-rectified raw images is:
+```
+modd2_generate_video('Projects/Viamaro/dataset_public', ...
+                      'Projects/WASR_results', ...
+		      'wasr_decoder_4', ...
+		      'Bovcon et al.', ...
+		      7, 0);
+```
+## Qualitative comparison
 <img src="description_images/qualitative_comparison.png">
 
 ## References
