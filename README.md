@@ -32,10 +32,10 @@ In practice, we can realisticlly expect that the camera exposure and other param
 ### Download
 
 The dataset is publicly available for download:<br>
-&darr; <a href="#">MaSTr1325 Images [512x384]</a><br>
-&darr; <a href="#">MaSTr1325 Ground Truth Annotations [512x384]</a><br>
-&darr; <a href="#">MaSTr1325 Images [1278x958]</a><br>
-&darr; <a href="#">MaSTr1325 Ground Truth Annotations [1278x958]</a>
+&darr; <a href="http://box.vicos.si/borja/mastr1325_dataset/MaSTr1325_images_512x384.zip">MaSTr1325 Images [512x384]</a><br>
+&darr; <a href="http://box.vicos.si/borja/mastr1325_dataset/MaSTr1325_masks_512x384.zip">MaSTr1325 Ground Truth Annotations [512x384]</a><br>
+&darr; <a href="#">MaSTr1325 Images [1278x958]</a> (soon)<br>
+&darr; <a href="#">MaSTr1325 Ground Truth Annotations [1278x958]</a> (soon)
 
 # Multi-modal Obstacle Detection Dataset 2 (MODD 2) [2]
 MODD2 is currently the biggest and the most challenging multi-modal marine obstacle detection dataset captured by a real USV. Diverse weather conditions (sunny, overcast, foggy), extreme situations (abrupt change of motion, sun gliter and reflections) and various small obstacles all contribute to its difficulty.
@@ -147,14 +147,14 @@ An example console output of the evaluation script for rectified sequences using
 **********************************
 ```
 
-An extensive evaluation of state-of-the-art segmentation methods is available on our website <a href="#">MODD 2 LeaderBoard</a>.
+An extensive evaluation of state-of-the-art segmentation methods is available on our website <a href="http://box.vicos.si/borja/viamaro/index.html#leaderboard">MODD 2 LeaderBoard</a>.
 
 # Visualization Scripts
 To keep visualizations of the results consistent with our paper, we propose using our Matlab visualization scripts. There are two functions available for visualization:
-<ol>
+<ul>
 	<li> <i>modd2_visualize_frame</i> --- for visualizing a single frame </li>
 	<li> <i>modd2_generate_video</i> --- for generating a video of the chosen sequence</li>
-</ol>
+</ul>
 
 The <i>modd2_visualize_frame</i> expects eight required input parameters (dataset path, path to segmentation masks, method name, author name, sequence number, frame number, use rectified images (boolean), type of visualization (0 - for qualitative comparison, 1 - for video). Generating a single frame visualization for qualitative comparison can be done by executing the following command:
 ```
@@ -192,7 +192,7 @@ modd2_generate_video('Projects/Viamaro/dataset_public', ...
 ## References
 [1] <a href="">Bovcon, Borja, et al. "The MaSTr1325 dataset for training deep USV obstacle detection models"<br>
 	IEEE/RSJ International Conference on Intelligent Robots and Systems (2019): xxx-xxx.</a><br>
-[2] <a href="">Bovcon, Borja, et al."Stereo obstacle detection for unmanned surface vehicles by {IMU}-assisted semantic segmentation"<br>
+[2] <a href="https://www.sciencedirect.com/science/article/pii/S0921889017305808">Bovcon, Borja, et al."Stereo obstacle detection for unmanned surface vehicles by {IMU}-assisted semantic segmentation"<br>
 	Robotics and Autonomous Systems 104 (2018): 1-13.</a><br>
 [3] <a href="https://ieeexplore.ieee.org/abstract/document/7073635">Kristan, Matej, et al. "Fast Image-Based Obstacle Detection from Unmanned Surface Vehicles."<br>
 	IEEE Transactions on cybernetics 46.3 (2015): 641-654.</a><br>
