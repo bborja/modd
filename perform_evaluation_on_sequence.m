@@ -80,8 +80,8 @@ function [output_results_cell, output_detections] = perform_evaluation_on_sequen
         gtl = gtl.annotations;
         
         % Filter sea-edge
-        sea_edge_line = gtl.sea_edge; 
-        gtl.sea_edge = filter_sea_edge(gt.sea_edge, eval_params.img_size);
+        gtl.sea_edge = filter_sea_edge(gtl.sea_edge, eval_params.img_size);
+        sea_edge_line = gtl.sea_edge;
         
         % create inverse sea mask
         tmp_inv_sea_mask = poly2mask([1; sea_edge_line(:,1); eval_params.img_size(2)], [1; sea_edge_line(:,2); 1], eval_params.img_size(1), eval_params.img_size(2));
