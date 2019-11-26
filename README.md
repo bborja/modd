@@ -189,9 +189,35 @@ modd2_generate_video('Projects/Viamaro/dataset_public', ...
 ## Qualitative comparison
 <img src="description_images/qualitative_comparison.png">
 
+## Cite this paper
+You are kindly asked to cite our corresponding papers if you use provided datasets and/or evaluation scripts:
+
+```
+@inproceedings{bb_iros_2019,
+  title={The MaSTr1325 dataset for training deep USV obstacle detection models},
+  author={Bovcon, Borja and Muhovi{\v{c}}, Jon and Per{\v{s}}, Janez and Kristan, Matej},
+  booktitle={2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
+  year={2019},
+  pages={3431--3438},
+  organization={IEEE}
+}
+```
+
+```
+@article{bb_ras_2018,
+  title={Stereo obstacle detection for unmanned surface vehicles by {IMU}-assisted semantic segmentation},
+  author={Bovcon, Borja and Muhovi{\v{c}}, Jon and Per{\v{s}}, Janez and Kristan, Matej},
+  journal={Robotics and Autonomous Systems},
+  volume={104},
+  pages={1--13},
+  year={2018},
+  publisher={Elsevier}
+}
+```
+
 ## References
 [1] <a href="">Bovcon, Borja, et al. "The MaSTr1325 dataset for training deep USV obstacle detection models"<br>
-	IEEE/RSJ International Conference on Intelligent Robots and Systems (2019): xxx-xxx.</a><br>
+	IEEE/RSJ International Conference on Intelligent Robots and Systems (2019): 3431-3438.</a><br>
 [2] <a href="https://www.sciencedirect.com/science/article/pii/S0921889017305808">Bovcon, Borja, et al."Stereo obstacle detection for unmanned surface vehicles by {IMU}-assisted semantic segmentation"<br>
 	Robotics and Autonomous Systems 104 (2018): 1-13.</a><br>
 [3] <a href="https://ieeexplore.ieee.org/abstract/document/7073635">Kristan, Matej, et al. "Fast Image-Based Obstacle Detection from Unmanned Surface Vehicles."<br>
